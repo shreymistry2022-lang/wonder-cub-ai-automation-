@@ -1,0 +1,27 @@
+# System Master Controls & Safety Flags
+system:
+  environment: "development"
+  brand: "The Wonder Cub"
+  version: "1.0.0-phase1"
+
+# Safety Kill Switches (Each independently controllable)
+flags:
+  AUTOMATION_ENABLED: true
+  PUBLISH_ENABLED: false        # Locked to false in Phase 1
+  OUTREACH_ENABLED: false       # Locked to false in Phase 1
+  SPEND_ENABLED: false          # Locked to false in Phase 1
+
+pipeline:
+  daily_schedule: "08:00"
+  max_concepts_generated: 5
+  posts_published_per_day: 1
+  require_human_approval: true
+  auto_archive_rejected: true
+  utm_defaults:
+    source: "instagram"
+    medium: "organic_social"
+
+storage:
+  database_type: "sqlite"
+  database_path: "data/thewondercub.db"
+  backup_dir: "data/backups"

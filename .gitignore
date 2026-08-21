@@ -1,0 +1,31 @@
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Databases & Runtime State
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+data/temp/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE and Gemini Brain Artifacts
+.vscode/
+.idea/
+.system_generated/

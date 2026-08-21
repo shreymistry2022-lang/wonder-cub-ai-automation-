@@ -1,0 +1,40 @@
+brand:
+  name: "The Wonder Cub"
+  tagline: "Big adventures for little explorers"
+  website: "https://thewondercub.store"
+  support_email: "hello@thewondercub.store"
+  mission: "Help parents find fun, educational and screen-free activities for children ages 3–7."
+  
+target_audience:
+  primary: "Parents of children aged 3 to 7 looking for screen-free engagement"
+  secondary: "Grandparents, early childhood educators, homeschoolers"
+  pain_points:
+    - "Excessive screen time and digital fatigue"
+    - "Boredom during rainy days and travel"
+    - "Guilt over passive entertainment"
+    - "Complicated activities requiring extensive prep time"
+    
+tone_of_voice:
+  characteristics:
+    - "Warm, encouraging, and parent-friendly"
+    - "Playful, adventurous, and curious"
+    - "Helpful, clear, and reassuring"
+    - "Honest, high-integrity, and child-safe"
+  forbidden_words_and_phrases:
+    - "Hurry before it's gone!"
+    - "Secret hack doctors don't want you to know"
+    - "Only 2 left in stock!"
+    - "Guaranteed genius child"
+    - "100% cure for tantrums"
+
+visual_identity:
+  color_palette:
+    primary_forest: "#1E3D2F"
+    warm_amber: "#E59838"
+    soft_cream: "#FBF7EE"
+    sky_blue: "#68A691"
+    earth_brown: "#634735"
+  typography:
+    headline: "Outfit / Poppins"
+    body: "Inter / Nunito"
+  style: "Clean, high-contrast, modern children's adventure, friendly illustration style"

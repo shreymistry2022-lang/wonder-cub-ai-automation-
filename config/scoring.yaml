@@ -1,0 +1,24 @@
+growth_score_weights:
+  share_potential: 0.30
+  save_potential: 0.20
+  comment_potential: 0.15
+  reach_potential: 0.15
+  follow_potential: 0.10
+  profile_visit_potential: 0.10
+
+sales_score_weights:
+  audience_product_fit: 0.30
+  problem_product_fit: 0.20
+  website_click_potential: 0.20
+  purchase_intent: 0.15
+  cta_quality: 0.15
+
+daily_winner_formula:
+  growth_weight: 0.60
+  sales_weight: 0.40
+
+quality_thresholds:
+  min_growth_score: 6.0
+  min_sales_score: 5.0
+  min_composite_score: 6.5
+  max_ip_risk_allowed: 0.10
