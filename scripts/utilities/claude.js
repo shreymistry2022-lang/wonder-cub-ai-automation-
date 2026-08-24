@@ -2,7 +2,9 @@
 
 const Anthropic = require('@anthropic-ai/sdk');
 
-const MODEL = 'claude-opus-5';
+// Sonnet 5 over Opus 5: this pipeline generates marketing copy/captions, not
+// hard reasoning, and Sonnet 5 costs ~40% less ($3/$15 per 1M vs $5/$25).
+const MODEL = 'claude-sonnet-5';
 
 let _client;
 function client() {
