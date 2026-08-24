@@ -1,63 +1,42 @@
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import { QualityChecker } from '../../scripts/quality/qualityChecker.js';
+'use strict';
 
-test('QualityChecker: Passes clean compliant post draft', () => {
-  const checker = new QualityChecker();
-  const validPost = {
-    hook: '3 zero-prep animal games for curious little explorers tonight',
-    caption: 'When 5 PM hits, try these 3 screen-free animal games with your child. Full details inside! #screenfreekids #thewondercub',
-    url: 'https://thewondercub.store/jungle-safari',
-    mediaAssets: [{ slideNumber: 1, headline: '3 zero-prep games' }]
-  };
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { checkDraft } = require('../../scripts/quality/qualityChecker');
 
-  const result = checker.evaluatePost(validPost);
-  assert.equal(result.passed, true);
-  assert.equal(result.flags.length, 0);
-  assert.equal(result.ipRiskScore, 0.0);
+const products = [{
+  id: 'wild-wonders-jungle-safari',
+  name: 'Wild Wonders — A Jungle Safari Adventure',
+  url: 'https://thewondercub.store/jungle-safari',
+  variants: [
+    { name: 'Single Volume', price_usd: 5.99 },
+    { name: 'Any 2 Volumes', price_usd: 9.99 },
+    { name: 'Complete Bundle', price_usd: 13.99 },
+  ],
+}];
+
+test('checkDraft passes when price and URL are verified', () => {
+  const result = checkDraft({
+    productId: 'wild-wonders-jungle-safari',
+    priceUsd: 13.99,
+    url: 'https://thewondercub.store/jungle-safari?utm_content=WC-1',
+  }, products);
+  assert.equal(result.pass, true);
+  assert.deepEqual(result.failures, []);
 });
 
-test('QualityChecker: Flags unauthorized third-party trademarked characters', () => {
-  const checker = new QualityChecker();
-  const infringingPost = {
-    hook: 'Disney and Paw Patrol animal games for your 4-year-old',
-    caption: 'Play with Mickey Mouse and Peppa Pig in this activity pack.',
+test('checkDraft fails on an invented price', () => {
+  const result = checkDraft({
+    productId: 'wild-wonders-jungle-safari',
+    priceUsd: 999,
     url: 'https://thewondercub.store/jungle-safari',
-    mediaAssets: [{ slideNumber: 1, headline: 'Paw Patrol games' }]
-  };
-
-  const result = checker.evaluatePost(infringingPost);
-  assert.equal(result.passed, false);
-  assert.ok(result.flags.some(f => f.includes('trademarked entity "disney"')));
-  assert.ok(result.flags.some(f => f.includes('trademarked entity "paw patrol"')));
-  assert.ok(result.flags.some(f => f.includes('trademarked entity "peppa pig"')));
-  assert.equal(result.ipRiskScore, 0.9);
+  }, products);
+  assert.equal(result.pass, false);
+  assert.match(result.failures[0], /does not match any verified price/);
 });
 
-test('QualityChecker: Flags forbidden aggressive marketing claims', () => {
-  const checker = new QualityChecker();
-  const aggressivePost = {
-    hook: 'HURRY BEFORE IT\'S GONE: The secret hack doctors don\'t want you to know',
-    caption: '100% cure for tantrums guaranteed genius child only 2 left in stock.',
-    url: 'https://thewondercub.store/jungle-safari',
-    mediaAssets: [{ slideNumber: 1, headline: 'Hurry now' }]
-  };
-
-  const result = checker.evaluatePost(aggressivePost);
-  assert.equal(result.passed, false);
-  assert.ok(result.flags.some(f => f.includes('aggressive marketing phrase')));
-});
-
-test('QualityChecker: Flags unverified destination URLs', () => {
-  const checker = new QualityChecker();
-  const badUrlPost = {
-    hook: '3 zero-prep animal games for curious little explorers',
-    caption: 'Check out this brand new activity pack for kids! #screenfreekids',
-    url: 'https://unverified-third-party-store.com/checkout',
-    mediaAssets: [{ slideNumber: 1, headline: 'Play games' }]
-  };
-
-  const result = checker.evaluatePost(badUrlPost);
-  assert.equal(result.passed, false);
-  assert.ok(result.flags.some(f => f.includes('URL Warning')));
+test('checkDraft fails on an unknown product', () => {
+  const result = checkDraft({ productId: 'made-up-product' }, products);
+  assert.equal(result.pass, false);
+  assert.match(result.failures[0], /Unknown product_id/);
 });

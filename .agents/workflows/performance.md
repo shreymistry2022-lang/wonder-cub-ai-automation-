@@ -1,16 +1,13 @@
-# Workflow: Performance Collection (`performance.md`)
+# Performance Workflow
 
-## Trigger
-- Runs at T+6h, T+24h, and T+72h after post publication.
+Runs `node scripts/analytics/performanceAgent.js` (analytics-agent).
 
-## Pipeline Steps
-1. **Instagram Metrics Ingestion**:
-   - Query Meta Graph API for Reach, Impressions, Likes, Comments, Shares, Saves, Profile Visits, Follows.
-   - Calculate Engagement Rate and Share/Save Ratio.
-2. **Website & Sales Attribution**:
-   - Query GA4 and website order records matching the post's UTM content tag (`WC-YYYY-MM-DD-###`).
-   - Tally: Sessions, Product Views, Add-to-Carts, Checkouts, Attributed Orders, Revenue.
-3. **Database Update**:
-   - Insert snapshot row into `content_metrics` and `website_sessions`.
-4. **Daily Reporting**:
-   - Compile daily executive report in `data/reports/daily-report-YYYY-MM-DD.md`.
+1. Collect Instagram metrics (from data/performance/ manual logs, or a real
+   API integration once built).
+2. Collect website analytics (data/sales/ sessions, once GA4/adapter exists).
+3. Collect sales data (data/sales/).
+4. Match UTM/content IDs across all three.
+5. Calculate growth_score, sales_score, final_score per config/scoring.yaml.
+6. Identify winners/losers vs account median and same-format/pillar peers.
+7. Update data/learning/ with this week's findings.
+8. Output data/reports/performance-<date>.json + a readable summary.

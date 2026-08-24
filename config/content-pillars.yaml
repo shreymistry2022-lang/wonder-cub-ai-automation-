@@ -1,59 +1,25 @@
-content_mix:
-  growth_and_value: 0.60
-  trust_and_education: 0.25
-  product_and_sales: 0.15
-
 pillars:
-  - id: "parent-problems"
-    name: "Parent Problems & Practical Solutions"
-    category: "growth_and_value"
-    description: "Tackling common pain points like rainy day boredom, restaurant meltdowns, car trip restlessness, and digital fatigue."
-    example_hooks:
-      - "The 5-minute trick when your toddler is bored and whining"
-      - "Before you hand over your phone on a long drive, try this"
-      - "Rainy day survival guide: 4 zero-prep activities for 4-year-olds"
+  - id: parent_problems
+    name: "Parent Problems"
+    topics: [boredom, screen_time, travel_boredom, rainy_days, quiet_time]
+  - id: screen_free_activities
+    name: "Screen-Free Activities"
+    topics: [5_minute_activities, no_prep_activities, travel_activities, indoor_activities]
+  - id: interactive
+    name: "Interactive"
+    topics: [guessing_games, hidden_objects, puzzles, challenges, spot_the_difference]
+  - id: educational
+    name: "Educational"
+    topics: [animal_facts, learning_challenges, simple_educational_activities]
+  - id: relatable_parenting
+    name: "Relatable Parenting"
+    topics: [parent_pov, funny_situations, common_child_behavior]
+  - id: product_conversion
+    name: "Product / Conversion"
+    topics: [product_demonstrations, whats_inside, benefits, use_cases, gift_ideas, legitimate_promotions]
 
-  - id: "screen-free-activities"
-    name: "Screen-Free Quick Activities"
-    category: "growth_and_value"
-    description: "Fast, creative, no-prep learning games parents can do instantly with everyday items."
-    example_hooks:
-      - "3 easy animal games that keep kids busy while you cook dinner"
-      - "No supplies? No problem. The 10-minute detective game"
-      - "How to turn a living room into a wild safari"
-
-  - id: "interactive-games"
-    name: "Interactive Puzzles & Challenges"
-    category: "growth_and_value"
-    description: "Engaging swipeable carousels and Reels: Guess the animal, spot the difference, hidden objects, and size comparison quizzes."
-    example_hooks:
-      - "Can your 5-year-old guess this mystery jungle animal?"
-      - "Spot the 3 hidden animals before the timer ends!"
-      - "Which animal is bigger? 90% of kids get #3 wrong"
-
-  - id: "educational-facts"
-    name: "Educational Discoveries & Animal Wonders"
-    category: "trust_and_education"
-    description: "Mind-blowing real animal facts and 'As Big As...' comparisons designed to spark awe and discussion."
-    example_hooks:
-      - "Did you know an elephant trunk has over 40,000 muscles?"
-      - "3 weird animal facts your little explorer will want to tell everyone"
-      - "How tall is a giraffe compared to your front door?"
-
-  - id: "relatable-parenting"
-    name: "Relatable Parenting Moments (POV)"
-    category: "trust_and_education"
-    description: "Humorous, warm, authentic reflections on the joys and chaos of raising curious young kids."
-    example_hooks:
-      - "POV: You asked for 5 minutes of quiet time"
-      - "When your 4-year-old becomes a full-time animal expert"
-      - "The 3 types of play every afternoon goes through"
-
-  - id: "product-conversion"
-    name: "Product Showcase & Conversion"
-    category: "product_and_sales"
-    description: "Authentic demonstrations of the Jungle Safari Adventure pack, showing real kids exploring, earning badges, and coloring."
-    example_hooks:
-      - "Inside the 60-animal activity book parents are printing at home"
-      - "Look what happened when we gave our 4-year-old their first explorer badge"
-      - "The screen-free printable bundle that turned our afternoon around"
+content_mix:
+  growth_value_pct: 60
+  trust_education_pct: 25
+  sales_pct: 15
+  note: "Initial hypothesis. Adjust based on actual performance data from the learning system."

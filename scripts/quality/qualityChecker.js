@@ -1,76 +1,41 @@
-export class QualityChecker {
-  constructor() {
-    this.forbiddenPhrases = [
-      'hurry before it\'s gone',
-      'secret hack',
-      'doctors don\'t want you to know',
-      'only 2 left in stock',
-      'guaranteed genius child',
-      '100% cure for tantrums',
-      'cure your child\'s behavior'
-    ];
+'use strict';
 
-    this.trademarkedCharacters = [
-      'disney',
-      'paw patrol',
-      'peppa pig',
-      'cocomelon',
-      'bluey',
-      'pokemon',
-      'marvel',
-      'mickey mouse',
-      'elsa',
-      'frozen'
-    ];
+const { loadProducts } = require('../utilities/config');
+
+/**
+ * Automatable subset of the Quality/IP Agent's commercial checks:
+ * verifies any price/URL mentioned in a draft matches config/products.yaml
+ * exactly. Everything subjective (tone, IP similarity, copy quality) still
+ * requires the human/agent review described in .agents/agents/quality-checker.md.
+ *
+ * draft: { productId, priceUsd, url, ctaText }
+ */
+function checkDraft(draft, products = loadProducts()) {
+  const failures = [];
+  const product = products.find((p) => p.id === draft.productId);
+
+  if (!product) {
+    failures.push(`Unknown product_id "${draft.productId}" — not found in config/products.yaml`);
+    return { pass: false, failures };
   }
 
-  evaluatePost(post) {
-    const flags = [];
-    const textToScan = `${post.hook} ${post.caption} ${JSON.stringify(post.mediaAssets || [])}`.toLowerCase();
-
-    // 1. IP / Trademark checks
-    for (const tm of this.trademarkedCharacters) {
-      if (textToScan.includes(tm)) {
-        flags.push(`IP Warning: Found unauthorized reference to trademarked entity "${tm}"`);
-      }
-    }
-
-    // 2. Forbidden phrases
-    for (const phrase of this.forbiddenPhrases) {
-      if (textToScan.includes(phrase)) {
-        flags.push(`Brand Voice Warning: Found aggressive marketing phrase "${phrase}"`);
-      }
-    }
-
-    // 3. Price & Product Check
-    if (textToScan.includes('$') && !textToScan.includes('13.99') && !textToScan.includes('9.99')) {
-      flags.push('Pricing Warning: Found unverified price mention. Only verified prices are $13.99 (bundle) and $9.99 (bonus value).');
-    }
-
-    // 4. URL Validation
-    if (post.url && !post.url.startsWith('https://thewondercub.store')) {
-      flags.push(`URL Warning: Destination URL "${post.url}" does not belong to the official store domain.`);
-    }
-
-    // 5. Structure Completeness
-    if (!post.hook || post.hook.length < 10) {
-      flags.push('Structural Warning: Hook is too short or missing.');
-    }
-    if (!post.caption || post.caption.length < 50) {
-      flags.push('Structural Warning: Caption is too brief or incomplete.');
-    }
-    if (!post.mediaAssets || post.mediaAssets.length === 0) {
-      flags.push('Media Warning: No slide or video assets provided in post draft.');
-    }
-
-    const passed = flags.length === 0;
-    const ipRiskScore = flags.some(f => f.startsWith('IP Warning')) ? 0.9 : 0.0;
-
-    return {
-      passed,
-      flags,
-      ipRiskScore,
-      evaluatedAt: new Date().toISOString()
-    };
+  if (draft.url && draft.url.split('?')[0] !== product.url) {
+    failures.push(`URL "${draft.url}" does not match verified product URL "${product.url}"`);
   }
+
+  if (draft.priceUsd !== undefined) {
+    const validPrices = [
+      ...(product.variants || []).map((v) => v.price_usd),
+      product.price_usd,
+    ].filter((p) => p !== undefined);
+    if (!validPrices.includes(draft.priceUsd)) {
+      failures.push(
+        `Price ${draft.priceUsd} does not match any verified price for "${product.name}" (${validPrices.join(', ')})`
+      );
+    }
+  }
+
+  return { pass: failures.length === 0, failures };
 }
+
+module.exports = { checkDraft };

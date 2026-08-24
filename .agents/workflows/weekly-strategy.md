@@ -1,19 +1,13 @@
-# Workflow: Weekly Strategy & Learning Loop (`weekly-strategy.md`)
+# Weekly Strategy Workflow
 
-## Trigger
-- Weekly every Sunday evening.
+Runs `node scripts/analytics/performanceAgent.js --weekly` (analytics-agent +
+sales-analyst), then produces next week's plan.
 
-## Pipeline Steps
-1. **Aggregated Review**:
-   - Ingest all posts, metrics, website visits, and sales from the trailing 7 days.
-2. **Winners & Losers Classification**:
-   - Identify top 20% posts by Engagement, Saves/Shares, and Attributed Revenue.
-   - Identify bottom 20% posts.
-3. **Pattern Recognition & Anti-Overfitting**:
-   - Extract recurring themes in winning hooks and formats.
-   - Reject single-post anomalies (require repeated evidence across at least 3 posts).
-4. **Learning Database**:
-   - Store conclusions in `data/learning/week-YYYY-WW.json`.
-5. **Next Week Strategy Formulation**:
-   - Adjust pillar weights and hook angles for the upcoming week.
-   - Generate `data/reports/weekly-strategy-report.md`.
+1. Read this week's content, website, and sales data.
+2. Identify winners.
+3. Identify repeated patterns (require >=2 supporting observations before
+   generalizing -- see anti-overfitting rule, section 53 of the spec).
+4. Reject unsupported assumptions.
+5. Update data/learning/.
+6. Propose next week's content pillar mix and up to 5 next tests.
+7. Hand the plan to content-strategist for next week's daily-content runs.

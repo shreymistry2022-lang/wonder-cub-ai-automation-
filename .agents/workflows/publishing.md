@@ -1,20 +1,17 @@
-# Workflow: Publishing Pipeline (`publishing.md`)
+# Publishing Workflow
 
-## Trigger
-- Scheduled posting window or manual trigger on `APPROVED` posts.
+1. Confirm config/automation.yaml publish_enabled == true.
+2. Confirm content status == APPROVED.
+3. Validate media.
+4. Validate caption.
+5. Validate URL.
+6. Check duplicate (content_id, media hash, caption hash vs content/published/).
+7. Publish through the official Instagram integration.
+8. Verify response.
+9. Save instagram_post_id.
+10. Set status PUBLISHED, move to content/published/.
 
-## Execution Sequence
-1. **Safety Pre-Check**:
-   - Check `PUBLISH_ENABLED`: If `false`, abort execution and log `"Phase 1 Safety Mode: Publishing disabled"`.
-   - Check post status: Must be `APPROVED`.
-2. **Deduplication Check**:
-   - Verify content ID, image media hash, and caption hash have not been published in the last 60 days.
-3. **Meta API Dispatch**:
-   - Upload media container to Instagram Graph API.
-   - Attach caption and verified link sticker / bio reference.
-   - Execute publication call.
-4. **Post-Publish Verification**:
-   - Verify Meta API returns valid `instagram_post_id`.
-   - Transition status to `PUBLISHED` with `published_at` timestamp.
-   - Move artifact to `content/published/`.
-   - On error: Transition status to `FAILED`, generate alert, do not retry indefinitely.
+On failure: status FAILED + alert (see analytics-agent / notifications).
+
+Phase 1: publish_enabled is false, so this workflow prints the manual
+checklist instead of publishing (see .agents/agents/publisher.md).

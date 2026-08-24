@@ -1,172 +1,191 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { dbService } from '../database/db.js';
-import { WebsiteAdapter } from './website/websiteAdapter.js';
-import { ResearchEngine } from './research/researchEngine.js';
-import { StrategyEngine } from './strategy/strategyEngine.js';
-import { CreativeEngine } from './creative/creativeEngine.js';
-import { QualityChecker } from './quality/qualityChecker.js';
-import { ApprovalManager } from './approval/approvalManager.js';
+'use strict';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const projectRoot = path.resolve(__dirname, '..');
+/**
+ * Daily Content pipeline (.agents/workflows/daily-content.md), driven by the
+ * Claude API instead of a human running each agent by hand.
+ *
+ * Usage:
+ *   node scripts/pipeline.js research     -> research-agent + web search, saves data/trends/<date>.json
+ *   node scripts/pipeline.js strategize   -> content-strategist, saves content/ideas/<date>.json
+ *   node scripts/pipeline.js creative <content_id>  -> creative-director, saves content/drafts/<content_id>.md
+ *   node scripts/pipeline.js quality <content_id>   -> quality-checker, moves to content/review/ on pass
+ *   node scripts/pipeline.js daily        -> runs research -> strategize -> creative (top concept) -> quality
+ *
+ * Requires ANTHROPIC_API_KEY. Never publishes anything — see scripts/publish/.
+ */
 
-export class AutomationPipeline {
-  constructor(options = {}) {
-    this.websiteAdapter = new WebsiteAdapter();
-    this.researchEngine = new ResearchEngine();
-    this.strategyEngine = new StrategyEngine();
-    this.creativeEngine = new CreativeEngine();
-    this.qualityChecker = new QualityChecker();
-    this.approvalManager = new ApprovalManager();
+const fs = require('fs');
+const path = require('path');
+const { ROOT, loadProducts, loadScoring, loadContentPillars, loadAutomationFlags, loadYaml } = require('./utilities/config');
+const { askClaude, extractJson } = require('./utilities/claude');
+const { loadAgentPrompt, loadAgentsMd } = require('./utilities/agentPrompt');
+const { buildUtmUrl } = require('./utilities/utm');
+const { checkDraft } = require('./quality/qualityChecker');
 
-    // Guardrails
-    this.flags = {
-      AUTOMATION_ENABLED: true,
-      PUBLISH_ENABLED: false, // Locked to false in Phase 1
-      OUTREACH_ENABLED: false,
-      SPEND_ENABLED: false
-    };
-  }
+const TRENDS_DIR = path.join(ROOT, 'data', 'trends');
+const IDEAS_DIR = path.join(ROOT, 'content', 'ideas');
+const DRAFTS_DIR = path.join(ROOT, 'content', 'drafts');
+const REVIEW_DIR = path.join(ROOT, 'content', 'review');
 
-  async runDailyCycle() {
-    const runId = `RUN-${Date.now()}`;
-    console.log(`\n🚀 [The Wonder Cub AI] Starting Daily Automation Pipeline [Run: ${runId}]`);
-    console.log(`🔒 Guardrail Status: PUBLISH_ENABLED=${this.flags.PUBLISH_ENABLED}, OUTREACH_ENABLED=${this.flags.OUTREACH_ENABLED}`);
-
-    try {
-      // 1. Seed / Verify Products in DB
-      const products = this.websiteAdapter.getProducts();
-      dbService.seedProducts(products);
-      console.log(`📦 Seeded ${products.length} verified store product(s) into database.`);
-
-      // 2. Run Daily Research
-      console.log(`🔎 Running Competitor & Trend Research...`);
-      const researchFindings = await this.researchEngine.runDailyResearch();
-      console.log(`✅ Research complete. Analyzed ${researchFindings.totalAnalyzed} benchmarks.`);
-
-      // 3. Run Strategy & Scoring
-      console.log(`💡 Generating 5 candidate concepts across content pillars...`);
-      const concepts = this.strategyEngine.generateDailyConcepts(researchFindings);
-
-      for (const concept of concepts) {
-        dbService.saveContentIdea({
-          id: concept.id,
-          pillar: concept.pillar,
-          format: concept.format,
-          hook: concept.hook,
-          problem: concept.problem,
-          concept: concept.concept,
-          audience: concept.audience,
-          growth_score: concept.growthScore,
-          sales_score: concept.salesScore,
-          composite_score: concept.compositeScore,
-          product_id: concept.productId,
-          cta: concept.cta,
-          visual_direction: concept.visualDirection,
-          is_winner: concept.isWinner || false,
-          status: 'IDEA'
-        });
-      }
-
-      const winner = concepts.find(c => c.isWinner) || concepts[0];
-      console.log(`🏆 Selected Daily Winner: "${winner.hook}" (Growth: ${winner.growthScore}, Sales: ${winner.salesScore}, Composite: ${winner.compositeScore})`);
-
-      // 4. Creative Engine Generation
-      const contentId = this.creativeEngine.generateContentId(new Date(), 1);
-      console.log(`🎨 Generating Creative Assets & Carousel structure for [${contentId}]...`);
-      const postDraft = this.creativeEngine.buildCarouselPost(winner, contentId);
-
-      // 5. Quality & IP Checker Gate
-      console.log(`🛡️ Running Strict Brand & IP Quality Checks...`);
-      const qualityResult = this.qualityChecker.evaluatePost(postDraft);
-
-      if (!qualityResult.passed) {
-        console.error(`❌ Quality Check Failed with flags:`, qualityResult.flags);
-        postDraft.status = 'REJECTED';
-        postDraft.quality_check_passed = false;
-        postDraft.rejection_reason = qualityResult.flags.join('; ');
-        dbService.saveContentPost(postDraft);
-        dbService.recordRun(runId, 'daily-content', 'FAILED', 'Quality check failed', qualityResult.flags.join('; '));
-        return { success: false, reason: 'Quality check failed', flags: qualityResult.flags };
-      }
-
-      console.log(`✅ Quality & IP Check Passed! (IP Risk: ${qualityResult.ipRiskScore})`);
-      postDraft.status = 'REVIEW';
-      postDraft.quality_check_passed = true;
-      postDraft.ip_risk = qualityResult.ipRiskScore;
-
-      // 6. Save Draft Post to DB and Filesystem
-      dbService.saveContentPost({
-        content_id: postDraft.contentId,
-        idea_id: postDraft.ideaId,
-        pillar: postDraft.pillar,
-        format: postDraft.format,
-        hook: postDraft.hook,
-        caption: postDraft.caption,
-        product_id: postDraft.productId,
-        url: postDraft.url,
-        utm_url: postDraft.utmUrl,
-        media_assets: postDraft.mediaAssets,
-        growth_score: postDraft.growthScore,
-        sales_score: postDraft.salesScore,
-        ip_risk: postDraft.ipRisk,
-        quality_check_passed: true,
-        status: 'REVIEW'
-      });
-
-      const reviewFile = path.resolve(projectRoot, `content/review/${postDraft.contentId}.json`);
-      fs.writeFileSync(reviewFile, JSON.stringify(postDraft, null, 2), 'utf-8');
-
-      // 7. Render Review Card
-      console.log(`\n🛑 Human Approval Gate Reached:`);
-      const card = this.approvalManager.formatReviewCard({
-        content_id: postDraft.contentId,
-        pillar: postDraft.pillar,
-        format: postDraft.format,
-        product_id: postDraft.productId,
-        url: postDraft.url,
-        utm_url: postDraft.utmUrl,
-        growth_score: postDraft.growthScore,
-        sales_score: postDraft.salesScore,
-        ip_risk: postDraft.ipRisk,
-        quality_check_passed: true,
-        hook: postDraft.hook,
-        caption: postDraft.caption,
-        media_assets: postDraft.mediaAssets,
-        status: 'REVIEW'
-      });
-      console.log(card);
-
-      // 8. Phase 1 Safety Check
-      if (!this.flags.PUBLISH_ENABLED) {
-        console.log(`🔒 Phase 1 Guardrail: Post [${postDraft.contentId}] is securely staged in REVIEW status.`);
-        console.log(`👉 Run "npm run approve" to inspect and approve pending drafts.`);
-      }
-
-      dbService.recordRun(runId, 'daily-content', 'STOPPED_AT_GATE', `Content ${postDraft.contentId} successfully prepared for human review.`);
-      return { success: true, contentId: postDraft.contentId, status: 'REVIEW' };
-
-    } catch (err) {
-      console.error(`💥 Pipeline Error:`, err);
-      dbService.recordRun(runId, 'daily-content', 'FAILED', 'Unhandled pipeline error', err.message);
-      throw err;
-    }
-  }
+function today() {
+  return new Date().toISOString().slice(0, 10);
 }
 
-// CLI entry point
-if (process.argv[1] && process.argv[1].endsWith('pipeline.js')) {
-  const pipeline = new AutomationPipeline();
-  pipeline.runDailyCycle()
-    .then(res => {
-      console.log(`\n🏁 Daily run completed successfully. (Status: ${res.status})\n`);
-      process.exit(0);
-    })
-    .catch(err => {
-      console.error(`\n❌ Daily run failed:`, err.message);
-      process.exit(1);
-    });
+function baseSystem(agentName) {
+  return `${loadAgentsMd()}\n\n---\n\n${loadAgentPrompt(agentName)}`;
 }
+
+async function runResearch() {
+  const brand = loadYaml('config/brand.yaml');
+  const competitors = loadYaml('config/competitors.yaml').competitors || [];
+  const prompt = `Brand context:\n${JSON.stringify(brand, null, 2)}\n\n` +
+    `Known competitors so far (may be empty):\n${JSON.stringify(competitors, null, 2)}\n\n` +
+    `Use web search to find 5-8 real, currently-active parenting/kids-activity Instagram accounts, ` +
+    `recent high-performing posts in this niche, or emerging topics relevant to screen-free kids activities. ` +
+    `Only include things you can verify from search results — never invent an account or URL. ` +
+    `Respond with ONLY a JSON array, each item matching this shape:\n` +
+    `{"research_date":"${today()}","source":"","account":"","url":"","topic":"","format":"","hook":"","observed_engagement":"","why_it_may_work":"","audience_problem":"","original_adaptation":"","ip_risk":""}`;
+
+  const text = await askClaude({
+    system: baseSystem('research-agent'),
+    prompt,
+    tools: [{ type: 'web_search_20260209', name: 'web_search', max_uses: 8 }],
+  });
+  const findings = extractJson(text);
+
+  fs.mkdirSync(TRENDS_DIR, { recursive: true });
+  const outPath = path.join(TRENDS_DIR, `${today()}.json`);
+  fs.writeFileSync(outPath, JSON.stringify(findings, null, 2));
+  console.log(`Saved ${findings.length} research findings -> ${path.relative(ROOT, outPath)}`);
+  return findings;
+}
+
+async function runStrategy(findings) {
+  const products = loadProducts();
+  const scoring = loadScoring();
+  const pillars = loadContentPillars();
+
+  const prompt = `Research findings:\n${JSON.stringify(findings, null, 2)}\n\n` +
+    `Products (never invent prices/URLs beyond this):\n${JSON.stringify(products, null, 2)}\n\n` +
+    `Content pillars:\n${JSON.stringify(pillars, null, 2)}\n\n` +
+    `Scoring weights:\n${JSON.stringify(scoring, null, 2)}\n\n` +
+    `Generate exactly 5 original concepts. Respond with ONLY a JSON array, each item:\n` +
+    `{"content_id":"WC-${today()}-001","pillar":"","format":"","hook":"","problem":"","concept":"","audience":"",` +
+    `"growth_score":0,"sales_score":0,"final_score":0,"product_id":"","cta":"","visual_direction":"","ip_risk":""}\n` +
+    `Increment the numeric suffix of content_id for each of the 5 (001-005). Compute final_score using the ` +
+    `growth_weight/sales_weight in the scoring config.`;
+
+  const text = await askClaude({ system: baseSystem('content-strategist'), prompt });
+  const concepts = extractJson(text);
+
+  fs.mkdirSync(IDEAS_DIR, { recursive: true });
+  const outPath = path.join(IDEAS_DIR, `${today()}.json`);
+  fs.writeFileSync(outPath, JSON.stringify(concepts, null, 2));
+  console.log(`Saved ${concepts.length} concepts -> ${path.relative(ROOT, outPath)}`);
+  return concepts;
+}
+
+async function runCreative(concept) {
+  const products = loadProducts();
+  const automation = loadAutomationFlags();
+  const product = products.find((p) => p.id === concept.product_id);
+
+  const prompt = `Selected concept:\n${JSON.stringify(concept, null, 2)}\n\n` +
+    `Matched product (use ONLY this data for price/URL/claims):\n${JSON.stringify(product || {}, null, 2)}\n\n` +
+    `Produce the full creative. Respond with ONLY JSON:\n` +
+    `{"content_id":"${concept.content_id}","format":"","slides":[{"slide":1,"text":"","design_notes":""}],` +
+    `"reel_script":"","caption":"","cta_text":"","alt_text":"","visual_direction":""}\n` +
+    `Leave slides empty array if format is a reel; leave reel_script empty string if format is a carousel.`;
+
+  const text = await askClaude({ system: baseSystem('creative-director'), prompt });
+  const draft = extractJson(text);
+
+  const campaign = automation.utm.campaign_prefix || `${new Date().toLocaleString('en-US', { month: 'long' }).toLowerCase()}_${new Date().getFullYear()}`;
+  draft.product_id = concept.product_id;
+  draft.product_url = product ? product.url : null;
+  draft.utm_url = product
+    ? buildUtmUrl(product.url, {
+        source: automation.utm.source, medium: automation.utm.medium, campaign, content: concept.content_id,
+      })
+    : null;
+
+  fs.mkdirSync(DRAFTS_DIR, { recursive: true });
+  const outPath = path.join(DRAFTS_DIR, `${concept.content_id}.json`);
+  fs.writeFileSync(outPath, JSON.stringify(draft, null, 2));
+  console.log(`Saved draft -> ${path.relative(ROOT, outPath)}`);
+  return draft;
+}
+
+async function runQuality(draft) {
+  const products = loadProducts();
+  const product = products.find((p) => p.id === draft.product_id);
+
+  // Automatable subset: price/URL verification against config/products.yaml.
+  const priceMatch = draft.cta_text && product
+    ? (product.variants || []).find((v) => draft.cta_text.includes(String(v.price_usd)))
+    : null;
+  const auto = checkDraft({ productId: draft.product_id, priceUsd: priceMatch?.price_usd, url: draft.product_url }, products);
+
+  // Subjective checks (tone, IP similarity, copy quality) via the quality-checker agent prompt.
+  const prompt = `Draft to review:\n${JSON.stringify(draft, null, 2)}\n\n` +
+    `Automated price/URL check result: ${JSON.stringify(auto)}\n\n` +
+    `Respond with ONLY JSON: {"pass": true|false, "failures": ["..."], "notes": "..."}`;
+  const text = await askClaude({ system: baseSystem('quality-checker'), prompt });
+  const llmResult = extractJson(text);
+
+  const result = {
+    content_id: draft.content_id,
+    pass: auto.pass && llmResult.pass,
+    failures: [...auto.failures, ...(llmResult.failures || [])],
+    notes: llmResult.notes || '',
+    checked_at: new Date().toISOString(),
+  };
+
+  fs.mkdirSync(REVIEW_DIR, { recursive: true });
+  const reviewPath = path.join(REVIEW_DIR, `${draft.content_id}.json`);
+  fs.writeFileSync(reviewPath, JSON.stringify({ ...draft, quality: result }, null, 2));
+
+  if (result.pass) {
+    console.log(`PASS -> ${path.relative(ROOT, reviewPath)}. Awaiting human approval (.agents/workflows/approval.md).`);
+  } else {
+    console.log(`DO NOT PUBLISH — quality check failed: ${result.failures.join('; ')}`);
+  }
+  return result;
+}
+
+async function runDaily() {
+  const findings = await runResearch();
+  const concepts = await runStrategy(findings);
+  const top = [...concepts].sort((a, b) => (b.final_score ?? 0) - (a.final_score ?? 0))[0];
+  console.log(`Top concept: ${top.content_id} (final_score ${top.final_score})`);
+  const draft = await runCreative(top);
+  await runQuality(draft);
+}
+
+async function main() {
+  const [, , cmd, arg] = process.argv;
+  if (cmd === 'research') return runResearch();
+  if (cmd === 'strategize') {
+    const latest = fs.readdirSync(TRENDS_DIR).sort().pop();
+    const findings = JSON.parse(fs.readFileSync(path.join(TRENDS_DIR, latest), 'utf8'));
+    return runStrategy(findings);
+  }
+  if (cmd === 'creative') {
+    const latest = fs.readdirSync(IDEAS_DIR).sort().pop();
+    const concepts = JSON.parse(fs.readFileSync(path.join(IDEAS_DIR, latest), 'utf8'));
+    const concept = concepts.find((c) => c.content_id === arg) || concepts[0];
+    return runCreative(concept);
+  }
+  if (cmd === 'quality') {
+    const draft = JSON.parse(fs.readFileSync(path.join(DRAFTS_DIR, `${arg}.json`), 'utf8'));
+    return runQuality(draft);
+  }
+  if (cmd === 'daily') return runDaily();
+  console.log('Usage: node scripts/pipeline.js <research|strategize|creative|quality|daily> [content_id]');
+}
+
+if (require.main === module) {
+  main().catch((err) => { console.error(err); process.exit(1); });
+}
+
+module.exports = { runResearch, runStrategy, runCreative, runQuality, runDaily };

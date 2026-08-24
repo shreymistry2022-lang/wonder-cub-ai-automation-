@@ -1,117 +1,73 @@
-# The Wonder Cub — AI Growth & Sales Automation System
+# The Wonder Cub — AI Growth & Sales Automation (Phase 1)
 
-An autonomous AI marketing, intelligence, and sales attribution engine for **[The Wonder Cub](https://thewondercub.store)** built on **Google Antigravity 2.0 / Antigravity CLI**.
+Implements Phase 1 of `THE_WONDER_CUB_ANTIGRAVITY_AUTOMATION.md`: structure,
+configs, database schema, agents, workflows, and a working performance
+analytics agent. `PUBLISH_ENABLED=false` — nothing here posts to Instagram
+automatically. See `AGENTS.md` for the non-negotiable brand/IP/accuracy rules.
 
----
+## Setup
 
-## 🧭 The Core Growth Loop
-
-```text
-RESEARCH ➔ ANALYZE ➔ CREATE ➔ CHECK ➔ APPROVE ➔ PUBLISH ➔ MEASURE ➔ LEARN ➔ IMPROVE
 ```
-
----
-
-## 🔒 Safety & Phase 1 Guardrails
-
-The system is configured with strict safety controls in [`config/automation.yaml`](file:///c:/Users/Admin/Projects/Automation/config/automation.yaml) and [`AGENTS.md`](file:///c:/Users/Admin/Projects/Automation/AGENTS.md):
-- `PUBLISH_ENABLED=false`: Direct automated posting to Instagram is disabled during Phase 1.
-- `OUTREACH_ENABLED=false`: Direct creator messaging is disabled.
-- `SPEND_ENABLED=false`: Paid ad spend is locked.
-- **Human-in-the-Loop Approval**: Every generated post halts at `REVIEW` status until explicitly approved by an operator.
-
----
-
-## 📁 Project Layout
-
-```text
-c:/Users/Admin/Projects/Automation/
-├── AGENTS.md                          # Master brand & compliance operating rules
-├── THE_WONDER_CUB_ANTIGRAVITY_AUTOMATION.md # Architecture specification
-├── package.json                       # Scripts and dependencies
-├── .env.example                       # Environment keys template
-├── .agents/
-│   ├── agents/                        # 9 Specialized Antigravity Subagents
-│   │   ├── research-agent.md
-│   │   ├── viral-analyst.md
-│   │   ├── content-strategist.md
-│   │   ├── creative-director.md
-│   │   ├── quality-checker.md
-│   │   ├── publisher.md
-│   │   ├── analytics-agent.md
-│   │   ├── sales-analyst.md
-│   │   └── creator-agent.md
-│   ├── workflows/                     # 6 Antigravity Workflows
-│   │   ├── daily-research.md
-│   │   ├── daily-content.md
-│   │   ├── approval.md
-│   │   ├── publishing.md
-│   │   ├── performance.md
-│   │   └── weekly-strategy.md
-│   ├── skills/                        # Custom Antigravity Skills
-│   │   ├── competitor-research/SKILL.md
-│   │   ├── instagram-content/SKILL.md
-│   │   ├── website-analytics/SKILL.md
-│   │   └── sales-analysis/SKILL.md
-│   └── mcp_config.json                # MCP configuration
-├── config/
-│   ├── brand.yaml                     # Brand voice, colors, typography, forbidden claims
-│   ├── products.yaml                  # Verified product catalog (Jungle Safari bundle)
-│   ├── content-pillars.yaml           # 6 Pillars & 60/25/15 content mix
-│   ├── competitors.yaml               # Benchmark accounts & extraction rules
-│   ├── scoring.yaml                   # Growth Score, Sales Score, & Winner weights
-│   └── automation.yaml                # Master feature flags & scheduler config
-├── database/
-│   ├── schema.sql                     # Full relational schema (SQLite / PostgreSQL)
-│   └── db.js                          # Database client & lifecycle repository
-├── content/
-│   ├── review/                        # Pending drafts awaiting human review
-│   ├── approved/                      # Operator-approved assets ready for scheduling
-│   ├── published/                     # Historical published assets
-│   └── rejected/                      # Rejected drafts with logged feedback
-├── scripts/
-│   ├── pipeline.js                    # Master Phase 1 dry-run orchestrator
-│   ├── research/researchEngine.js     # Market & trend research engine
-│   ├── strategy/strategyEngine.js     # Scoring & winner selection engine
-│   ├── creative/creativeEngine.js     # Carousel & Reel creative generator
-│   ├── quality/qualityChecker.js      # Zero-tolerance IP & quality gate
-│   ├── approval/approvalManager.js    # Human review cards & CLI workflow
-│   └── website/websiteAdapter.js      # Store adapter & UTM builder
-└── tests/
-    ├── unit/scoring.test.js
-    ├── unit/quality.test.js
-    ├── unit/utm.test.js
-    └── integration/pipeline.test.js
-```
-
----
-
-## ⚡ Quick Start & Commands
-
-### 1. Run Automated Tests
-```bash
+npm install
 npm test
 ```
 
-### 2. Run the Daily Dry-Run Pipeline
-```bash
-npm run pipeline:daily
-```
-This executes the full loop:
-1. Seeds verified store products.
-2. Ingests research benchmarks.
-3. Generates 5 scored concepts across pillars.
-4. Selects the Daily Winner.
-5. Builds a 7-slide carousel and 4-part caption with UTM link.
-6. Runs the Quality & IP Gate.
-7. Stages the draft in `content/review/` and prints the **Content Approval Card**.
+## Daily loop (manual today, semi-automatic once Phase 2 lands)
 
-### 3. Review & Approve Content
-Inspect pending posts:
-```bash
-npm run approve
+1. Pick/generate concepts — see `.agents/agents/content-strategist.md` and
+   `content/ideas/`.
+2. Build the creative in Canva, write the caption — see
+   `.agents/agents/creative-director.md`. Build links with
+   `scripts/utilities/utm.js` so every link is tracked.
+3. Run it through `.agents/agents/quality-checker.md` (the automatable price/
+   URL check lives in `scripts/quality/qualityChecker.js`).
+4. Get human approval (`.agents/workflows/approval.md`).
+5. Post manually. Record `instagram_post_id` and the `content_id`.
+
+## Performance agent — the "verify performance and plan" loop
+
+After a post has been live a day or two, log its numbers manually (until the
+Instagram Graph API / GA4 adapters are built) as
+`data/performance/<content_id>.json`:
+
+```json
+{
+  "content_id": "WC-2026-08-24-001",
+  "pillar": "parent_problems",
+  "format": "reel",
+  "published_at": "2026-08-24",
+  "metrics": {
+    "reach": 1800, "impressions": 2100, "views": 1500, "likes": 90,
+    "comments": 12, "shares": 22, "saves": 34, "profile_visits": 20,
+    "follows": 6, "website_clicks": 15
+  }
+}
 ```
-Approve all staged drafts:
-```bash
-node scripts/approval/approvalManager.js --approve-all
+
+Log any resulting sale as `data/sales/<order_id>.json`:
+
+```json
+{ "order_id": "TWC-1042", "product_id": "wild-wonders-jungle-safari", "utm_content": "WC-2026-08-24-001", "revenue_usd": 13.99, "date": "2026-08-25" }
 ```
+
+Then run:
+
+```
+npm run analytics           # daily-style report: winners, losers, attributed revenue
+npm run analytics:weekly    # also writes data/learning/<date>.json and proposes next week's plan
+```
+
+This is `scripts/analytics/performanceAgent.js`. It computes growth/sales
+scores from real metrics against the account median (not guesses), attributes
+sales via UTM match, refuses to call something a "pattern" until at least 2
+posts support it (anti-overfitting rule, spec section 53), and proposes next
+tests based on what's actually winning. Output also goes to
+`data/reports/performance-<date>.json`.
+
+## What's not built yet
+
+- Real Instagram Graph API / GA4 / website adapter integrations (`scripts/website/`,
+  section 21) — currently manual JSON logs.
+- Publisher, creator outreach, and ad-spend automation — all gated off by
+  `config/automation.yaml` flags (`publish_enabled`, `outreach_enabled`,
+  `spend_enabled` = false) until explicitly approved.

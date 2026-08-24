@@ -1,36 +1,24 @@
+# Source of truth for real products. Never invent prices/URLs — verify against
+# https://thewondercub.store before editing.
+# Last verified: 2026-08-24
+
 products:
-  - id: "jungle-safari-bundle"
-    name: "Jungle Safari Adventure (Volumes 1, 2 & 3 Bundle)"
+  - id: wild-wonders-jungle-safari
+    name: "Wild Wonders — A Jungle Safari Adventure"
+    type: digital_download
     url: "https://thewondercub.store/jungle-safari"
-    price: 13.99
-    currency: "USD"
-    format: "Printable PDF Instant Download"
-    target_age: "Ages 3–7"
-    volumes:
-      - volume: 1
-        name: "Volume 1 — Official Jungle Explorer"
-        animals: 20
-        theme: "Classic safari favourites (lions, elephants, giraffes)"
-      - volume: 2
-        name: "Volume 2 — Senior Jungle Explorer"
-        animals: 20
-        theme: "Rainforest and canopy wildlife"
-      - volume: 3
-        name: "Volume 3 — Master Jungle Explorer"
-        animals: 20
-        theme: "Rare and nocturnal jungle animals"
-    key_features:
-      - "60 real animals with fun, researched facts"
-      - "As Big As... size comparisons little ones love"
-      - "15+ interactive activity pages and challenges"
-      - "Fun animal quizzes in every volume"
-      - "3 official explorer badges to print and earn"
-      - "US Letter standard print-at-home format"
-    included_bonus:
-      name: "12-Page Jungle Safari Colouring Adventure & Champion Certificate"
-      value: 9.99
-      status: "Included Free with bundle"
-    core_benefits:
-      - "100% screen-free afternoon engagement"
-      - "Zero prep time required — instant print and play"
-      - "Builds early STEM curiosity, animal knowledge, and observation skills"
+    description: >
+      3-volume jungle animal activity book series. Each volume covers 20 animals
+      with researched facts, size-comparison features, activity pages, and an
+      explorer certificate (Official / Senior / Master Jungle Explorer by volume).
+    variants:
+      - name: Single Volume
+        price_usd: 5.99
+      - name: Any 2 Volumes
+        price_usd: 9.99
+      - name: Complete Bundle (all 3 volumes + free colouring book)
+        price_usd: 13.99
+        compare_at_usd: 17.97
+        bonus: "12-page colouring book, 10 animals + certificate (limited-time bonus, valued $9.99)"
+    cta_text: "Get the Complete Bundle — $13.99"
+    audience: "Parents of children ages 3-7 seeking screen-free, educational activities"

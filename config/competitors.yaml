@@ -1,34 +1,9 @@
-monitoring:
-  frequency: "daily"
-  max_accounts_per_run: 10
-  rules:
-    - "Extract strategic format, hook concept, and problem addressed only."
-    - "Never copy visual assets, exact phrasing, or illustrations."
-    - "Transform all inspiration into The Wonder Cub brand voice and product context."
-
-benchmark_categories:
-  - category: "Kids Activity Accounts"
-    description: "Accounts sharing zero-prep activities, sensory bins, and crafts for toddlers/preschoolers"
-    examples:
-      - handle: "@busytoddler"
-        focus: "Practical, no-fuss activities for home"
-      - handle: "@dayswithgrey"
-        focus: "Breakfast invitations, hands-on learning"
-      - handle: "@mothercould"
-        focus: "Sensory play and DIY learning"
-
-  - category: "Screen-Free Parenting Creators"
-    description: "Advocates for outdoor play, imaginative toys, and nature learning"
-    examples:
-      - handle: "@1000hoursoutside"
-        focus: "Nature exploration and outdoor routines"
-      - handle: "@screenfreeactivities"
-        focus: "Easy ideas replacing screen habits"
-
-  - category: "Printable & STEM Learning"
-    description: "Creators who provide printable resources, animal facts, and nature science"
-    examples:
-      - handle: "@thestemlaboratory"
-        focus: "Interactive STEM games"
-      - handle: "@funlearningforkids"
-        focus: "Hands-on printable games"
+# Fill in with real accounts as research-agent finds them. Do not invent handles.
+# Each entry should be verified to exist before use.
+competitors: []
+# Example shape once populated:
+# - handle: "example_kids_activities"
+#   category: parenting_activities
+#   platform: instagram
+#   url: "https://instagram.com/example_kids_activities"
+#   notes: ""

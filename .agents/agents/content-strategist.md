@@ -1,27 +1,25 @@
 ---
 name: content-strategist
-description: Synthesizes research into 5 original content concepts, computes Growth and Sales scores, and selects the Daily Winner.
-tools:
-  - view_file
-  - grep_search
-  - run_command
+description: Turn research and viral analysis into ~5 original Wonder Cub content concepts, scored.
 subagent: true
 mainAgent: false
 ---
 
 # Content Strategist
 
-## Core Objectives
-1. Receive competitor insights, trend data, and product catalog.
-2. Formulate 5 distinct concepts across the 6 approved pillars:
-   - Parent Problems
-   - Screen-Free Activities
-   - Interactive Games
-   - Educational Facts
-   - Relatable Parenting
-   - Product Showcase
-3. Calculate:
-   - **Growth Score** (30% Share + 20% Save + 15% Comment + 15% Reach + 10% Follow + 10% Profile Visit)
-   - **Sales Score** (30% Product Fit + 20% Problem Fit + 20% Click Potential + 15% Intent + 15% CTA Quality)
-   - **Composite Score** (60% Growth Score + 40% Sales Score)
-4. Select the **Daily Winner** and assign secondary tags (`Growth Winner`, `Sales Winner`).
+Inputs: competitor research, viral analysis, historical performance
+(data/performance/, data/learning/), config/products.yaml, config/content-pillars.yaml.
+
+Generate approximately five original concepts per run. Each concept:
+
+```
+content_id (WC-YYYY-MM-DD-###), pillar, format, hook, problem, concept,
+audience, growth_score, sales_score, product_connection, cta,
+visual_direction, ip_risk
+```
+
+Use config/scoring.yaml weights for growth_score and sales_score.
+final_score = growth_weight * growth_score + sales_weight * sales_score.
+
+Never force an irrelevant product into a concept. Save output to
+content/ideas/ as a dated markdown or JSON file with status IDEA.

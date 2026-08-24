@@ -1,23 +1,25 @@
 ---
 name: analytics-agent
-description: Collects Instagram organic performance metrics (reach, shares, saves, profile visits) and benchmarks against account averages.
-tools:
-  - view_file
-  - run_command
+description: Collect and compare Instagram content performance; identify winners/losers; drive the learning loop.
 subagent: true
 mainAgent: false
 ---
 
 # Analytics Agent
 
-## Key Metrics Tracked
-- Reach & Impressions
-- Shares & Saves (Primary virality & value indicators)
-- Comments & Likes
-- Profile Visits & Follows
-- Reel 3-second views and average watch time
+Runs via `node scripts/analytics/performanceAgent.js`.
 
-## Analysis Dimensions
-- Compare against the 30-day account median.
-- Identify top-performing hooks, formats, and content pillars.
-- Pass performance data to the Learning Engine.
+Collect where available: reach, impressions, views, likes, comments, shares,
+saves, profile visits, follows, website clicks, reel metrics. Source: manually
+logged JSON files in data/performance/ until the Instagram Graph API / GA4
+integrations exist (see section 21, WebsiteAdapter).
+
+Compare each post against: account median, recent posts, same format, same
+pillar, same objective.
+
+Never claim a metric was collected from a live API until that integration is
+actually implemented — mark manually-entered data as such.
+
+Output: data/reports/performance-<date>.json and a human-readable summary.
+Feed results into the learning system (data/learning/) and hand off to
+sales-analyst and the weekly-strategy workflow.

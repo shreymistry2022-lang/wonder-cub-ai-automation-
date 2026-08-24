@@ -1,4 +1,8 @@
-growth_score_weights:
+# Initial weights per THE_WONDER_CUB_ANTIGRAVITY_AUTOMATION.md sections 14-16.
+# These are starting hypotheses -- the analytics agent should propose adjustments
+# once enough real performance observations exist (see data/learning/).
+
+growth_score:
   share_potential: 0.30
   save_potential: 0.20
   comment_potential: 0.15
@@ -6,19 +10,15 @@ growth_score_weights:
   follow_potential: 0.10
   profile_visit_potential: 0.10
 
-sales_score_weights:
+sales_score:
   audience_product_fit: 0.30
   problem_product_fit: 0.20
   website_click_potential: 0.20
   purchase_intent: 0.15
   cta_quality: 0.15
 
-daily_winner_formula:
+final_score:
   growth_weight: 0.60
   sales_weight: 0.40
 
-quality_thresholds:
-  min_growth_score: 6.0
-  min_sales_score: 5.0
-  min_composite_score: 6.5
-  max_ip_risk_allowed: 0.10
+min_observations_before_reweighting: 15
